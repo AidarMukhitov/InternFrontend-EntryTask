@@ -1,47 +1,56 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+  import { onMount } from "svelte";
+  import { getCurrencies, getCurrencyById } from "./api";
+  import Select from "./lib/Select.svelte";
+  import Form from "./lib/Form.svelte";
+
+  type Currency = {
+    base_code: string;
+    rates: Record<string, string>;
+  };
+
+  let currencies: string[] = [];
+  let inputCurrency: Currency | null = null;
+  let outputCurrency: string | null = null;
+  let loading = true;
+
+  onMount(async () => {
+    currencies = await getCurrencies();
+    loading = false;
+  });
+
+  const changeSelected = async (event: { detail: { id: string } }) => {
+    const { data } = await getCurrencyById(event.detail.id);
+    inputCurrency = data;
+  };
 </script>
 
-<main>
-  <div>
-    <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
-
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
+<main class="container p-3">
+  {#if loading}
+    <div>Loading...</div>
+  {:else}
+    <header class="">
+      <h1 class="text-center">Currency Converter</h1>
+    </header>
+    <Select
+      title={"Select input currency"}
+      {currencies}
+      on:selectCurrency={changeSelected}
+    />
+    <Select
+      title={"Select output currency"}
+      {currencies}
+      on:selectCurrency={(event) => (outputCurrency = event.detail.id)}
+    />
+    <div class="mt-2 mb-2">
+      {inputCurrency?.base_code ?? "Select input currency"} → {outputCurrency ??
+        "Select output currency"}
+    </div>
+    {#if outputCurrency && inputCurrency}
+      <Form currency={outputCurrency} rates={inputCurrency.rates} />
+    {/if}
+  {/if}
 </main>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
 </style>
